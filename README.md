@@ -102,4 +102,61 @@ loop and the UI via a mutex.
 **TUI.** A Bubble Tea model reads from the registry and event log
 whenever signaled that something changed, and renders the current
 state: a live table, an event feed, an optional detail view, and an
-optional grouped
+optional grouped network map.
+
+## Tech stack
+
+- **Go**, language
+- **mDNS over UDP multicast**, discovery protocol, hand-decoded DNS wire format, no external DNS library
+- **`charmbracelet/bubbletea`, `bubbles`, `lipgloss`**, terminal UI
+- **JSON**, export format
+
+## Installation
+
+### Prerequisites
+
+Just Go, no other system dependencies:
+
+```
+brew install go        # macOS
+sudo apt install golang # Debian/Ubuntu
+```
+
+### Build
+
+```
+git clone https://github.com/mdavis1013/pulse.git
+cd pulse
+go build -o pulse .
+```
+
+### Run
+
+Joining a multicast group needs elevated privileges, the same reason
+tools like Wireshark need `sudo`:
+
+```
+sudo ./pulse
+```
+
+## Controls
+
+Pulse boots straight into live discovery. Everything else is driven
+by single-key hotkeys:
+
+| Key | Action |
+|---|---|
+| `↑` `↓` | Move through the device list |
+| `enter` | Inspect the selected device (PTR/SRV/A detail + live TTL bars) |
+| `esc` | Close the detail view |
+| `tab` | Toggle the network map (devices grouped by physical device) |
+| `e` | Export the current session to a JSON file |
+| `q` | Quit |
+
+## What's next
+
+Discovery, liveness tracking, the interactive TUI, device grouping,
+and export are complete and verified against a real home network.
+Still on the list: TXT record decoding (often carries useful metadata,
+like a printer's supported paper sizes), IPv6/AAAA support, and an
+automated test suite to replace the current hand-verification process.
