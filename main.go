@@ -70,6 +70,7 @@ func main() {
 							continue
 						}
 						srvByInstance[rr.Name] = srv
+						registry.UpdateSRVDetail(rr.Name, srv, rr.TTL)
 						if ip, ok := ipByHost[srv.Target]; ok {
 							registry.UpdateAddress(rr.Name, ip, srv.Port)
 							ringDoorbell(changed)
@@ -83,6 +84,7 @@ func main() {
 						ipByHost[rr.Name] = ip
 						for instance, srv := range srvByInstance {
 							if srv.Target == rr.Name {
+								registry.UpdateADetail(instance, rr.TTL)
 								registry.UpdateAddress(instance, ip, srv.Port)
 								ringDoorbell(changed)
 							}
