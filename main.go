@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"time"
-
+	"strings"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -43,6 +43,10 @@ func main() {
 					case TypePTR:
 						target, _, err := decodeName(msg.Raw, rr.rdataOffset)
 						if err != nil {
+							continue
+						}
+
+						if isReverseDNSZone(rr.Name) {
 							continue
 						}
 
@@ -96,6 +100,15 @@ func main() {
 	if _, err := p.Run(); err != nil {
 		fmt.Println("Error:", err)
 	}
+}
+
+// isReverseDNSZone reports whether a PTR record's name is an
+// IP-to-hostname reverse lookup, rather than a real mDNS service type.
+// Both travel as PTR records over the same channel, but a reverse
+// lookup's "name" is an address, not a service -- treating it as one
+// produces garbage like we just saw.
+func isReverseDNSZone(name string) bool {
+	return strings.HasSuffix(name, ".in-addr.arpa") || strings.HasSuffix(name, ".ip6.arpa")
 }
 
 // ringDoorbell sends a non-blocking signal -- if the person by the
