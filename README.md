@@ -12,7 +12,7 @@ from scratch in Go.
 
 **Go** · **Multicast** · **TUI**
 
-## The idea
+## About
 
 Every device on your WiFi that supports AirPlay, Chromecast, network
 printing, HomeKit, or similar already broadcasts its presence
@@ -22,7 +22,7 @@ byte by byte, no DNS library involved — and shows a live,
 continuously-updating view of what's actually on the network: which
 devices exist, where to reach them, and whether they're still there.
 
-## What it actually does
+## Features
 
 - **Real mDNS multicast discovery** (`224.0.0.251:5353`) — no
   simulated data; every device shown is something actually announcing
@@ -40,15 +40,15 @@ devices exist, where to reach them, and whether they're still there.
   sweep that infers departure from silence — the same core pattern
   real distributed systems use for failure detection.
 - **Device grouping** — independent service announcements that share
-  an underlying device (including AirPlay-audio's MAC-prefixed naming
-  quirk) are recognized and grouped as one physical device, not several.
+  an underlying device are recognized and grouped as one physical
+  device, not several.
 - **Live interactive TUI** — a device table, a join/leave event feed,
   a per-record detail view with live-draining TTL bars, and a
   toggleable network map.
 - **Session export** — dump the current device list and event history
   to a readable JSON file.
 
-## Under the hood
+## How it works
 
 Pulse is organized as four cooperating pieces, all in one Go binary:
 
@@ -104,30 +104,16 @@ whenever signaled that something changed, and renders the current
 state — a live table, an event feed, an optional detail view, and an
 optional grouped network map.
 
-## Bugs I actually hit building this
+## Tech stack
 
-- **Reverse-DNS PTR records** (`244.1.168.192.in-addr.arpa`) travel as
-  the same record type as real service-discovery PTRs, but mean
-  something unrelated (an IP-to-hostname lookup). Left unfiltered,
-  these showed up as nonsense devices — fixed by recognizing the
-  `.in-addr.arpa` / `.ip6.arpa` suffix before treating a PTR as a real
-  service.
-- **AirPlay-audio (RAOP) names** are prefixed with a device's MAC
-  address (`AA8F74BD69AF@Maria's MacBook Air`), which broke device
-  grouping — it read as a different device than plain `Maria's
-  MacBook Air`. Fixed by stripping everything before `@` when deriving
-  a device's group identity.
+- **Go** — language
+- **mDNS over UDP multicast** — discovery protocol, hand-decoded DNS wire format, no external DNS library
+- **`charmbracelet/bubbletea`, `bubbles`, `lipgloss`** — terminal UI
+- **JSON** — export format
 
-## Built with
+## Installation
 
-| Concern | Choice |
-|---|---|
-| Language | Go |
-| Discovery protocol | mDNS over UDP multicast — hand-decoded DNS wire format, no external DNS library |
-| Terminal UI | `charmbracelet/bubbletea`, `bubbles`, `lipgloss` |
-| Export format | JSON |
-
-## Getting it running
+### Prerequisites
 
 Just Go — no other system dependencies:
 
@@ -136,11 +122,15 @@ brew install go        # macOS
 sudo apt install golang # Debian/Ubuntu
 ```
 
+### Build
+
 ```
 git clone https://github.com/mdavis1013/pulse.git
 cd pulse
 go build -o pulse .
 ```
+
+### Run
 
 Joining a multicast group needs elevated privileges, the same reason
 tools like Wireshark need `sudo`:
@@ -170,5 +160,3 @@ and export are complete and verified against a real home network.
 Still on the list: TXT record decoding (often carries useful metadata,
 like a printer's supported paper sizes), IPv6/AAAA support, and an
 automated test suite to replace the current hand-verification process.
-
-— Maria Davis
