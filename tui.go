@@ -26,6 +26,7 @@ type model struct {
 
 	selectedInstance string
 	showMap          bool
+	statusMsg string
 }
 
 func newModel(registry *Registry, appState *AppState, changed <-chan struct{}) model {
@@ -70,9 +71,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "e":
 			filename, err := exportSnapshot(m.registry, m.appState)
 			if err != nil {
-				fmt.Println("export failed:", err)
+				m.statusMsg = fmt.Sprintf("export failed: %v", err)
 			} else {
-				fmt.Println("saved to", filename)
+				m.statusMsg = fmt.Sprintf("saved to %s", filename)
 			}
 			return m, nil
 		case "tab":
@@ -110,8 +111,8 @@ func (m model) View() string {
 		"  " +
 		lipgloss.NewStyle().Foreground(colorMuted).Render("live device discovery — q to quit, tab to toggle map")
 
-	if m.showMap {
-		return header + "\n\n" + renderMap(m.devices)
+	if m.statusMsg != "" {
+		header += "\n" + lipgloss.NewStyle().Foreground(colorBlue).Render(m.statusMsg)
 	}
 
 	tableBox := lipgloss.NewStyle().
