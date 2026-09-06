@@ -23,6 +23,8 @@ type model struct {
 	events   []Event
 	devices  []DeviceRecord
 	detail   bool
+
+	selectedInstance string
 }
 
 func newModel(registry *Registry, appState *AppState, changed <-chan struct{}) model {
@@ -54,6 +56,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "q":
 			return m, tea.Quit
 		case "enter":
+			if !m.detail {
+				if d := m.selectedDevice(); d != nil {
+					m.selectedInstance = d.Instance
+				}
+			}
 			m.detail = !m.detail
 			return m, nil
 		case "esc":
@@ -120,7 +127,7 @@ func (m model) View() string {
 
 	view := header + "\n\n" + body
 	if m.detail {
-		if d := m.selectedDevice(); d != nil {
+		if d := m.deviceByInstance(m.selectedInstance); d != nil {
 			view += "\n\n" + renderDetail(*d)
 		}
 	}
@@ -134,6 +141,15 @@ func (m model) selectedDevice() *DeviceRecord {
 	}
 	for i := range m.devices {
 		if m.devices[i].Instance == row[0] {
+			return &m.devices[i]
+		}
+	}
+	return nil
+}
+
+func (m model) deviceByInstance(instance string) *DeviceRecord {
+	for i := range m.devices {
+		if m.devices[i].Instance == instance {
 			return &m.devices[i]
 		}
 	}
