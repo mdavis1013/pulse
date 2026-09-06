@@ -19,6 +19,11 @@ func groupKey(d DeviceRecord) string {
 	name := d.Instance
 	suffix := "." + d.ServiceType
 	name = strings.TrimSuffix(name, suffix)
+
+	if idx := strings.Index(name, "@"); idx != -1 {
+		name = name[idx+1:]
+	}
+
 	return name
 }
 
