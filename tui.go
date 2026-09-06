@@ -21,6 +21,8 @@ type model struct {
 	changed  <-chan struct{}
 	table    table.Model
 	events   []Event
+	devices  []DeviceRecord
+	detail   bool
 }
 
 func newModel(registry *Registry, appState *AppState, changed <-chan struct{}) model {
@@ -48,31 +50,40 @@ func (m model) Init() tea.Cmd {
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		if msg.String() == "q" {
+		switch msg.String() {
+		case "q":
 			return m, tea.Quit
+		case "enter":
+			m.detail = !m.detail
+			return m, nil
+		case "esc":
+			m.detail = false
+			return m, nil
 		}
 		var cmd tea.Cmd
 		m.table, cmd = m.table.Update(msg)
 		return m, cmd
 
-	case refreshMsg:
-		devices := m.registry.Snapshot()
-		rows := make([]table.Row, 0, len(devices))
-		for _, d := range devices {
-			addr := "(resolving...)"
-			if d.IP != "" {
-				addr = fmt.Sprintf("%s:%d", d.IP, d.Port)
+		case refreshMsg:
+			devices := m.registry.Snapshot()
+			m.devices = devices
+
+			rows := make([]table.Row, 0, len(devices))
+			for _, d := range devices {
+				addr := "(resolving...)"
+				if d.IP != "" {
+					addr = fmt.Sprintf("%s:%d", d.IP, d.Port)
+				}
+				rows = append(rows, table.Row{d.Instance, d.ServiceType, addr})
 			}
-			rows = append(rows, table.Row{d.Instance, d.ServiceType, addr})
+			m.table.SetRows(rows)
+
+			m.events = m.appState.Events()
+
+			return m, waitForChange(m.changed)
 		}
-		m.table.SetRows(rows)
-
-		m.events = m.appState.Events()
-
-		return m, waitForChange(m.changed)
+		return m, nil
 	}
-	return m, nil
-}
 
 func (m model) View() string {
 	header := lipgloss.NewStyle().Bold(true).Foreground(colorText).Render("pulse") +
