@@ -7,21 +7,58 @@ import (
 	"time"
 )
 
-// ExportSnapshot is what gets written to disk -- a durable record of
-// what was observed, readable outside the running program.
-type ExportSnapshot struct {
-	ExportedAt string         `json:"exported_at"`
-	Devices    []DeviceRecord `json:"devices"`
-	Events     []Event        `json:"events"`
+// exportDevice mirrors DeviceRecord, but with durations written as
+// readable strings ("1h15m0s") instead of raw nanosecond numbers --
+// this file is meant to be something a human could actually open and
+// read, not just technically-correct data.
+type exportDevice struct {
+	Instance    string `json:"instance"`
+	ServiceType string `json:"service_type"`
+	IP          string `json:"ip"`
+	Port        uint16 `json:"port"`
+	TTL         string `json:"ttl"`
+	SRVTarget   string `json:"srv_target,omitempty"`
+	SRVTTL      string `json:"srv_ttl,omitempty"`
+	ATTL        string `json:"a_ttl,omitempty"`
 }
 
-// exportSnapshot writes the current state to a timestamped JSON file
-// and returns its filename.
+type exportEvent struct {
+	Kind     string `json:"kind"`
+	Instance string `json:"instance"`
+	At       string `json:"at"`
+}
+
+type ExportSnapshot struct {
+	ExportedAt string         `json:"exported_at"`
+	Devices    []exportDevice `json:"devices"`
+	Events     []exportEvent  `json:"events"`
+}
+
 func exportSnapshot(registry *Registry, appState *AppState) (string, error) {
-	snap := ExportSnapshot{
-		ExportedAt: time.Now().Format(time.RFC3339),
-		Devices:    registry.Snapshot(),
-		Events:     appState.Events(),
+	devices := registry.Snapshot()
+	events := appState.Events()
+
+	snap := ExportSnapshot{ExportedAt: time.Now().Format(time.RFC3339)}
+
+	for _, d := range devices {
+		snap.Devices = append(snap.Devices, exportDevice{
+			Instance:    d.Instance,
+			ServiceType: d.ServiceType,
+			IP:          d.IP,
+			Port:        d.Port,
+			TTL:         d.TTL.String(),
+			SRVTarget:   d.SRVTarget,
+			SRVTTL:      d.SRVTTL.String(),
+			ATTL:        d.ATTL.String(),
+		})
+	}
+
+	for _, e := range events {
+		snap.Events = append(snap.Events, exportEvent{
+			Kind:     e.Kind,
+			Instance: e.Instance,
+			At:       e.At.Format(time.RFC3339),
+		})
 	}
 
 	data, err := json.MarshalIndent(snap, "", "  ")
