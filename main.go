@@ -53,7 +53,7 @@ func main() {
 						continue
 					}
 
-					registry.Observe(target, rr.TTL)
+					registry.Observe(target, rr.Name, rr.TTL)
 					ringDoorbell(changed)
 				}
 

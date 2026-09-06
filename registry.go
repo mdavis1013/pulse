@@ -7,9 +7,10 @@ import (
 
 // DeviceRecord is what we currently believe about one device.
 type DeviceRecord struct {
-	Instance  string
-	LastSeen  time.Time
-	TTL       time.Duration
+	Instance    string
+	ServiceType string
+	LastSeen    time.Time
+	TTL         time.Duration
 }
 
 // Registry tracks every currently-believed-live device.
@@ -34,7 +35,7 @@ type Event struct {
 // Observe records that we just heard from this device, with the TTL
 // that specific message declared. Returns a "joined" event if this is
 // the first time we've seen it.
-func (r *Registry) Observe(instance string, ttlSeconds uint32) *Event {
+func (r *Registry) Observe(instance string, serviceType string, ttlSeconds uint32) *Event {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -44,7 +45,7 @@ func (r *Registry) Observe(instance string, ttlSeconds uint32) *Event {
 	d, exists := r.devices[instance]
 	var event *Event
 	if !exists {
-		d = &DeviceRecord{Instance: instance}
+		d = &DeviceRecord{Instance: instance, ServiceType: serviceType}
 		r.devices[instance] = d
 		event = &Event{Kind: "joined", Instance: instance, At: now}
 	}

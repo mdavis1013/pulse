@@ -50,7 +50,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		devices := m.registry.Snapshot()
 		rows := make([]table.Row, 0, len(devices))
 		for _, d := range devices {
-			rows = append(rows, table.Row{d.Instance, ""})
+			rows = append(rows, table.Row{d.Instance, d.ServiceType})
 		}
 		m.table.SetRows(rows)
 		return m, waitForChange(m.changed)
