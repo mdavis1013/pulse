@@ -67,10 +67,19 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "esc":
 			m.detail = false
 			return m, nil
+		case "e":
+			filename, err := exportSnapshot(m.registry, m.appState)
+			if err != nil {
+				fmt.Println("export failed:", err)
+			} else {
+				fmt.Println("saved to", filename)
+			}
+			return m, nil
 		case "tab":
 			m.showMap = !m.showMap
 			return m, nil
 		}
+		
 		var cmd tea.Cmd
 		m.table, cmd = m.table.Update(msg)
 		return m, cmd
