@@ -115,6 +115,10 @@ func (m model) View() string {
 		header += "\n" + lipgloss.NewStyle().Foreground(colorBlue).Render(m.statusMsg)
 	}
 
+	if m.showMap {
+		return header + "\n\n" + renderMap(m.devices)
+	}
+
 	tableBox := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(colorMuted).
