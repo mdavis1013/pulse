@@ -13,6 +13,17 @@ type DeviceRecord struct {
 	Port        uint16
 	LastSeen    time.Time
 	TTL         time.Duration
+
+	PTRSeenAt time.Time
+
+	SRVSeenAt   time.Time
+	SRVTarget   string
+	SRVPriority uint16
+	SRVWeight   uint16
+	SRVTTL      time.Duration
+
+	ASeenAt time.Time
+	ATTL    time.Duration
 }
 
 // Registry tracks every currently-believed-live device.
@@ -54,6 +65,7 @@ func (r *Registry) Observe(instance string, serviceType string, ttlSeconds uint3
 
 	d.LastSeen = now
 	d.TTL = ttl
+	d.PTRSeenAt = now
 	return event
 }
 
@@ -66,6 +78,31 @@ func (r *Registry) UpdateAddress(instance string, ip string, port uint16) {
 	if d, ok := r.devices[instance]; ok {
 		d.IP = ip
 		d.Port = port
+	}
+}
+
+// UpdateSRVDetail records the actual SRV record fields for a device.
+func (r *Registry) UpdateSRVDetail(instance string, srv SRVData, ttlSeconds uint32) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	if d, ok := r.devices[instance]; ok {
+		d.SRVSeenAt = time.Now()
+		d.SRVTarget = srv.Target
+		d.SRVPriority = srv.Priority
+		d.SRVWeight = srv.Weight
+		d.SRVTTL = time.Duration(ttlSeconds) * time.Second
+	}
+}
+
+// UpdateADetail records the A record's own TTL for a device.
+func (r *Registry) UpdateADetail(instance string, ttlSeconds uint32) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	if d, ok := r.devices[instance]; ok {
+		d.ASeenAt = time.Now()
+		d.ATTL = time.Duration(ttlSeconds) * time.Second
 	}
 }
 
