@@ -66,7 +66,7 @@ func main() {
 		}
 	}()
 
-	p := tea.NewProgram(model{registry: registry, changed: changed})
+	p := tea.NewProgram(newModel(registry, changed))
 	if _, err := p.Run(); err != nil {
 		fmt.Println("Error:", err)
 	}

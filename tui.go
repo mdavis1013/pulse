@@ -1,25 +1,30 @@
 package main
 
 import (
+	"fmt"
+
+	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-// refreshMsg is sent whenever new data is available for the model to
-// pick up -- our own custom message type, since bubbletea only knows
-// about the built-in ones (keypresses, etc.) unless we define more.
 type refreshMsg struct{}
 
-// model holds everything the screen currently needs to know.
 type model struct {
 	registry *Registry
 	changed  <-chan struct{}
-	devices  []DeviceRecord
+	table    table.Model
 }
 
-// waitForChange blocks until something arrives on the changed channel,
-// then reports it to bubbletea as a refreshMsg. bubbletea re-runs this
-// itself after every Update, so this effectively keeps listening
-// forever, one wakeup at a time.
+func newModel(registry *Registry, changed <-chan struct{}) model {
+	columns := []table.Column{
+		{Title: "DEVICE", Width: 40},
+		{Title: "SERVICE", Width: 25},
+	}
+	t := table.New(table.WithColumns(columns), table.WithFocused(true), table.WithHeight(15))
+
+	return model{registry: registry, changed: changed, table: t}
+}
+
 func waitForChange(changed <-chan struct{}) tea.Cmd {
 	return func() tea.Msg {
 		<-changed
@@ -37,18 +42,22 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.String() == "q" {
 			return m, tea.Quit
 		}
+		var cmd tea.Cmd
+		m.table, cmd = m.table.Update(msg)
+		return m, cmd
 
 	case refreshMsg:
-		m.devices = m.registry.Snapshot()
-		return m, waitForChange(m.changed) // keep listening for the NEXT change
+		devices := m.registry.Snapshot()
+		rows := make([]table.Row, 0, len(devices))
+		for _, d := range devices {
+			rows = append(rows, table.Row{d.Instance, ""})
+		}
+		m.table.SetRows(rows)
+		return m, waitForChange(m.changed)
 	}
 	return m, nil
 }
 
 func (m model) View() string {
-	out := "pulse -- live device discovery (q to quit)\n\n"
-	for _, d := range m.devices {
-		out += d.Instance + "\n"
-	}
-	return out
+	return fmt.Sprintf("pulse -- live device discovery (q to quit)\n\n%s", m.table.View())
 }
