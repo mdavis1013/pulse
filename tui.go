@@ -5,6 +5,12 @@ import (
 
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
+)
+var (
+	colorMuted = lipgloss.Color("#8a8fa3")
+	colorBlue  = lipgloss.Color("#5b8def")
+	colorText  = lipgloss.Color("#e6e6e6")
 )
 
 type refreshMsg struct{}
@@ -69,15 +75,37 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	eventLines := "RECENT EVENTS\n\n"
+	header := lipgloss.NewStyle().Bold(true).Foreground(colorText).Render("pulse") +
+		"  " +
+		lipgloss.NewStyle().Foreground(colorMuted).Render("live device discovery — q to quit")
+
+	tableBox := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(colorMuted).
+		Padding(0, 1).
+		Render(m.table.View())
+
+	eventsTitle := lipgloss.NewStyle().Bold(true).Foreground(colorMuted).Render("RECENT EVENTS")
+
 	start := 0
 	if len(m.events) > 10 {
 		start = len(m.events) - 10
 	}
+	eventLines := ""
 	for i := len(m.events) - 1; i >= start; i-- {
 		e := m.events[i]
-		eventLines += fmt.Sprintf("[%s] %s\n", e.Kind, e.Instance)
+		color := colorBlue
+		eventLines += lipgloss.NewStyle().Foreground(color).Render(fmt.Sprintf("[%s] %s", e.Kind, e.Instance)) + "\n"
 	}
 
-	return fmt.Sprintf("pulse -- live device discovery (q to quit)\n\n%s\n\n%s", m.table.View(), eventLines)
+	eventsBox := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(colorMuted).
+		Padding(0, 1).
+		Width(40).
+		Render(eventsTitle + "\n\n" + eventLines)
+
+	body := lipgloss.JoinHorizontal(lipgloss.Top, tableBox, "  ", eventsBox)
+
+	return header + "\n\n" + body
 }
