@@ -1,17 +1,18 @@
- ____  _    _ _     ____  ______
-|  _ \| |  | | |   / ___||  ____|
-| |_) | |  | | |   \___ \| |__
-|  __/| |  | | |    ___) |  __|
-| |   | |__| | |___|____/| |____
-|_|    \____/|______|
+```
+ ____        _
+|  _ \ _   _| |___  ___
+| |_) | | | | / __|/ _ \
+|  __/| |_| | \__ \  __/
+|_|    \__,_|_|___/\___|
+```
 
 A live mDNS network device scanner with a terminal UI — discovers real
 devices on your WiFi by hand-decoding the DNS wire protocol, built
 from scratch in Go.
 
-Go Multicast TUI
+**Go** · **Multicast** · **TUI**
 
-## What it does
+## The idea
 
 Every device on your WiFi that supports AirPlay, Chromecast, network
 printing, HomeKit, or similar already broadcasts its presence
@@ -21,7 +22,7 @@ byte by byte, no DNS library involved — and shows a live,
 continuously-updating view of what's actually on the network: which
 devices exist, where to reach them, and whether they're still there.
 
-## Highlights
+## What it actually does
 
 - **Real mDNS multicast discovery** (`224.0.0.251:5353`) — no
   simulated data; every device shown is something actually announcing
@@ -47,9 +48,9 @@ devices exist, where to reach them, and whether they're still there.
 - **Session export** — dump the current device list and event history
   to a readable JSON file.
 
-## How it works
+## Under the hood
 
-Pulse is organized as four cooperating layers, all in one Go binary:
+Pulse is organized as four cooperating pieces, all in one Go binary:
 
 ```
 ┌───────────────────────────────────────────────────────────┐
@@ -103,7 +104,7 @@ whenever signaled that something changed, and renders the current
 state — a live table, an event feed, an optional detail view, and an
 optional grouped network map.
 
-## Notable bugs found building this
+## Bugs I actually hit building this
 
 - **Reverse-DNS PTR records** (`244.1.168.192.in-addr.arpa`) travel as
   the same record type as real service-discovery PTRs, but mean
@@ -117,7 +118,7 @@ optional grouped network map.
   MacBook Air`. Fixed by stripping everything before `@` when deriving
   a device's group identity.
 
-## Tech stack
+## Built with
 
 | Concern | Choice |
 |---|---|
@@ -126,9 +127,7 @@ optional grouped network map.
 | Terminal UI | `charmbracelet/bubbletea`, `bubbles`, `lipgloss` |
 | Export format | JSON |
 
-## Installation
-
-### Prerequisites
+## Getting it running
 
 Just Go — no other system dependencies:
 
@@ -137,15 +136,11 @@ brew install go        # macOS
 sudo apt install golang # Debian/Ubuntu
 ```
 
-### Build
-
 ```
 git clone https://github.com/mdavis1013/pulse.git
 cd pulse
 go build -o pulse .
 ```
-
-### Run
 
 Joining a multicast group needs elevated privileges, the same reason
 tools like Wireshark need `sudo`:
@@ -154,10 +149,10 @@ tools like Wireshark need `sudo`:
 sudo ./pulse
 ```
 
-## Using it
+## Controls
 
 Pulse boots straight into live discovery. Everything else is driven
-by single-key hotkeys shown at the top of the screen:
+by single-key hotkeys:
 
 | Key | Action |
 |---|---|
@@ -168,11 +163,12 @@ by single-key hotkeys shown at the top of the screen:
 | `e` | Export the current session to a JSON file |
 | `q` | Quit |
 
-## Project status & roadmap
+## What's next
 
 Discovery, liveness tracking, the interactive TUI, device grouping,
-and export are complete and verified against a real home network. The
-next milestones are TXT record decoding (often carries useful
-metadata, like a printer's supported paper sizes), IPv6/AAAA support,
-and an automated test suite to replace the current hand-verification
-process.
+and export are complete and verified against a real home network.
+Still on the list: TXT record decoding (often carries useful metadata,
+like a printer's supported paper sizes), IPv6/AAAA support, and an
+automated test suite to replace the current hand-verification process.
+
+— Maria Davis
