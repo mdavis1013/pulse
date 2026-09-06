@@ -72,3 +72,15 @@ func (r *Registry) Sweep() []Event {
 
 	return events
 }
+
+// Snapshot returns every currently-live device, for display purposes.
+func (r *Registry) Snapshot() []DeviceRecord {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	out := make([]DeviceRecord, 0, len(r.devices))
+	for _, d := range r.devices {
+		out = append(out, *d)
+	}
+	return out
+}
