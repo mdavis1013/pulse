@@ -11,11 +11,13 @@ type refreshMsg struct{}
 
 type model struct {
 	registry *Registry
+	appState *AppState
 	changed  <-chan struct{}
 	table    table.Model
+	events   []Event
 }
 
-func newModel(registry *Registry, changed <-chan struct{}) model {
+func newModel(registry *Registry, appState *AppState, changed <-chan struct{}) model {
 	columns := []table.Column{
 		{Title: "DEVICE", Width: 40},
 		{Title: "SERVICE", Width: 25},
@@ -23,7 +25,7 @@ func newModel(registry *Registry, changed <-chan struct{}) model {
 	}
 	t := table.New(table.WithColumns(columns), table.WithFocused(true), table.WithHeight(15))
 
-	return model{registry: registry, changed: changed, table: t}
+	return model{registry: registry, appState: appState, changed: changed, table: t}
 }
 
 func waitForChange(changed <-chan struct{}) tea.Cmd {
@@ -58,11 +60,24 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			rows = append(rows, table.Row{d.Instance, d.ServiceType, addr})
 		}
 		m.table.SetRows(rows)
+
+		m.events = m.appState.Events()
+
 		return m, waitForChange(m.changed)
 	}
 	return m, nil
 }
 
 func (m model) View() string {
-	return fmt.Sprintf("pulse -- live device discovery (q to quit)\n\n%s", m.table.View())
+	eventLines := "RECENT EVENTS\n\n"
+	start := 0
+	if len(m.events) > 10 {
+		start = len(m.events) - 10
+	}
+	for i := len(m.events) - 1; i >= start; i-- {
+		e := m.events[i]
+		eventLines += fmt.Sprintf("[%s] %s\n", e.Kind, e.Instance)
+	}
+
+	return fmt.Sprintf("pulse -- live device discovery (q to quit)\n\n%s\n\n%s", m.table.View(), eventLines)
 }

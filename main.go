@@ -21,6 +21,7 @@ func main() {
 	srvByInstance := map[string]SRVData{}
 	ipByHost := map[string]string{}
 	changed := make(chan struct{}, 1)
+	appState := NewAppState()
 
 	messages := make(chan *Message, 100)
 	stop := make(chan struct{})
@@ -58,7 +59,9 @@ func main() {
 							continue
 						}
 
-						registry.Observe(target, rr.Name, rr.TTL)
+						if event := registry.Observe(target, rr.Name, rr.TTL); event != nil {
+							appState.AddEvent(*event)
+						}
 						ringDoorbell(changed)
 
 					case TypeSRV:
@@ -89,6 +92,9 @@ func main() {
 	
 			case <-sweepTicker.C:
 				events := registry.Sweep()
+				for _, event := range events {
+					appState.AddEvent(event)
+				}
 				if len(events) > 0 {
 					ringDoorbell(changed)
 				}
@@ -96,7 +102,7 @@ func main() {
 		}
 	}()
 
-	p := tea.NewProgram(newModel(registry, changed))
+	p := tea.NewProgram(newModel(registry, appState, changed))
 	if _, err := p.Run(); err != nil {
 		fmt.Println("Error:", err)
 	}
