@@ -18,6 +18,8 @@ func main() {
 
 	registry := NewRegistry()
 	knownServiceTypes := map[string]bool{}
+	srvByInstance := map[string]SRVData{}
+	ipByHost := map[string]string{}
 	changed := make(chan struct{}, 1)
 
 	messages := make(chan *Message, 100)
@@ -37,26 +39,50 @@ func main() {
 			select {
 			case msg := <-messages:
 				for _, rr := range msg.Answers {
-					if rr.Type != TypePTR {
-						continue
-					}
-					target, _, err := decodeName(msg.Raw, rr.rdataOffset)
-					if err != nil {
-						continue
-					}
-
-					if rr.Name == metaService {
-						if !knownServiceTypes[target] {
-							knownServiceTypes[target] = true
-							scanner.SendQuery(target)
+					switch rr.Type {
+					case TypePTR:
+						target, _, err := decodeName(msg.Raw, rr.rdataOffset)
+						if err != nil {
+							continue
 						}
-						continue
+
+						if rr.Name == metaService {
+							if !knownServiceTypes[target] {
+								knownServiceTypes[target] = true
+								scanner.SendQuery(target)
+							}
+							continue
+						}
+
+						registry.Observe(target, rr.Name, rr.TTL)
+						ringDoorbell(changed)
+
+					case TypeSRV:
+						srv, err := rr.DecodeSRV(msg.Raw)
+						if err != nil {
+							continue
+						}
+						srvByInstance[rr.Name] = srv
+						if ip, ok := ipByHost[srv.Target]; ok {
+							registry.UpdateAddress(rr.Name, ip, srv.Port)
+							ringDoorbell(changed)
+						}
+
+					case TypeA:
+						ip, err := rr.DecodeA()
+						if err != nil {
+							continue
+						}
+						ipByHost[rr.Name] = ip
+						for instance, srv := range srvByInstance {
+							if srv.Target == rr.Name {
+								registry.UpdateAddress(instance, ip, srv.Port)
+								ringDoorbell(changed)
+							}
+						}
 					}
-
-					registry.Observe(target, rr.Name, rr.TTL)
-					ringDoorbell(changed)
 				}
-
+	
 			case <-sweepTicker.C:
 				events := registry.Sweep()
 				if len(events) > 0 {

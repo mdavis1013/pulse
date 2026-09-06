@@ -19,6 +19,7 @@ func newModel(registry *Registry, changed <-chan struct{}) model {
 	columns := []table.Column{
 		{Title: "DEVICE", Width: 40},
 		{Title: "SERVICE", Width: 25},
+		{Title: "ADDRESS", Width: 22},
 	}
 	t := table.New(table.WithColumns(columns), table.WithFocused(true), table.WithHeight(15))
 
@@ -50,7 +51,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		devices := m.registry.Snapshot()
 		rows := make([]table.Row, 0, len(devices))
 		for _, d := range devices {
-			rows = append(rows, table.Row{d.Instance, d.ServiceType})
+			addr := "(resolving...)"
+			if d.IP != "" {
+				addr = fmt.Sprintf("%s:%d", d.IP, d.Port)
+			}
+			rows = append(rows, table.Row{d.Instance, d.ServiceType, addr})
 		}
 		m.table.SetRows(rows)
 		return m, waitForChange(m.changed)

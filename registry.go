@@ -9,6 +9,8 @@ import (
 type DeviceRecord struct {
 	Instance    string
 	ServiceType string
+	IP          string
+	Port        uint16
 	LastSeen    time.Time
 	TTL         time.Duration
 }
@@ -53,6 +55,18 @@ func (r *Registry) Observe(instance string, serviceType string, ttlSeconds uint3
 	d.LastSeen = now
 	d.TTL = ttl
 	return event
+}
+
+// UpdateAddress fills in a device's resolved IP and port, once we've
+// successfully cross-referenced its SRV and A records.
+func (r *Registry) UpdateAddress(instance string, ip string, port uint16) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	if d, ok := r.devices[instance]; ok {
+		d.IP = ip
+		d.Port = port
+	}
 }
 
 // Sweep checks every known device against its own TTL, and evicts
