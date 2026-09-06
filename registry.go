@@ -1,6 +1,7 @@
 package main
 
 import (
+	"sort"
 	"sync"
 	"time"
 )
@@ -134,5 +135,8 @@ func (r *Registry) Snapshot() []DeviceRecord {
 	for _, d := range r.devices {
 		out = append(out, *d)
 	}
+	sort.Slice(out, func(i, j int) bool {
+		return out[i].Instance < out[j].Instance
+	})
 	return out
 }
