@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-
+	"time"
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -118,5 +118,66 @@ func (m model) View() string {
 
 	body := lipgloss.JoinHorizontal(lipgloss.Top, tableBox, "  ", eventsBox)
 
-	return header + "\n\n" + body
+	view := header + "\n\n" + body
+	if m.detail {
+		if d := m.selectedDevice(); d != nil {
+			view += "\n\n" + renderDetail(*d)
+		}
+	}
+	return view
+}
+
+func (m model) selectedDevice() *DeviceRecord {
+	row := m.table.SelectedRow()
+	if len(row) == 0 {
+		return nil
+	}
+	for i := range m.devices {
+		if m.devices[i].Instance == row[0] {
+			return &m.devices[i]
+		}
+	}
+	return nil
+}
+
+func renderDetail(d DeviceRecord) string {
+	now := time.Now()
+
+	content := fmt.Sprintf(
+		"DEVICE DETAIL — %s\n\n"+
+			"PTR RECORD (announces the instance exists)\n"+
+			"  Service:  %s\n"+
+			"  TTL:      %s\n\n"+
+			"SRV RECORD (which host + port provides it)\n"+
+			"  Target:   %s\n"+
+			"  Port:     %d\n"+
+			"  TTL:      %s\n\n"+
+			"A RECORD (that host's actual IP)\n"+
+			"  IP:       %s\n"+
+			"  TTL:      %s",
+		d.Instance,
+		d.ServiceType, ttlRemaining(d.TTL, d.PTRSeenAt, now),
+		d.SRVTarget, d.Port, ttlRemaining(d.SRVTTL, d.SRVSeenAt, now),
+		d.IP, ttlRemaining(d.ATTL, d.ASeenAt, now),
+	)
+
+	return lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(colorBlue).
+		Padding(1, 2).
+		Render(content)
+}
+
+// ttlRemaining computes how much longer a record should be trusted,
+// based on real elapsed time since it was last seen -- the same core
+// idea as the Registry's own failure detection, shown per-record here.
+func ttlRemaining(ttl time.Duration, seenAt time.Time, now time.Time) string {
+	if seenAt.IsZero() {
+		return "(not seen yet)"
+	}
+	remaining := ttl - now.Sub(seenAt)
+	if remaining < 0 {
+		remaining = 0
+	}
+	return fmt.Sprintf("%ds left (of %ds)", int(remaining.Seconds()), int(ttl.Seconds()))
 }
