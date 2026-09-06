@@ -1,10 +1,10 @@
-```
+<pre>
  ____        _
 |  _ \ _   _| |___  ___
 | |_) | | | | / __|/ _ \
 |  __/| |_| | \__ \  __/
 |_|    \__,_|_|___/\___|
-```
+</pre>
 
 A live mDNS network device scanner with a terminal UI. Discovers real
 devices on your WiFi by hand-decoding the DNS wire protocol, built
