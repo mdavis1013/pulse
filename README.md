@@ -12,6 +12,17 @@ from scratch in Go.
 
 **Go** · **Multicast** · **TUI**
 
+
+<img width="2170" height="1524" alt="6F225F0C-7358-4E7E-9C43-3DB35E2ACE5F" src="https://github.com/user-attachments/assets/d2c7b91d-2411-436f-854b-160c7b6fbf96" />
+
+*Live device table, join/leave event feed, and per-record detail view with real-time TTL countdowns*
+
+
+
+<img width="1442" height="1144" alt="6EB40FC7-4D01-481C-8F11-2A385FB95A32" src="https://github.com/user-attachments/assets/0ca11b30-0401-4b59-b33a-5ed6c57b4957" />
+
+*Network map: independent service announcements grouped back into physical devices*
+
 ## About
 
 Every device on your WiFi that supports AirPlay, Chromecast, network
