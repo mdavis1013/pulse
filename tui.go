@@ -25,6 +25,7 @@ type model struct {
 	detail   bool
 
 	selectedInstance string
+	showMap          bool
 }
 
 func newModel(registry *Registry, appState *AppState, changed <-chan struct{}) model {
@@ -66,36 +67,43 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "esc":
 			m.detail = false
 			return m, nil
+		case "tab":
+			m.showMap = !m.showMap
+			return m, nil
 		}
 		var cmd tea.Cmd
 		m.table, cmd = m.table.Update(msg)
 		return m, cmd
 
-		case refreshMsg:
-			devices := m.registry.Snapshot()
-			m.devices = devices
+	case refreshMsg:
+		devices := m.registry.Snapshot()
+		m.devices = devices
 
-			rows := make([]table.Row, 0, len(devices))
-			for _, d := range devices {
-				addr := "(resolving...)"
-				if d.IP != "" {
-					addr = fmt.Sprintf("%s:%d", d.IP, d.Port)
-				}
-				rows = append(rows, table.Row{d.Instance, d.ServiceType, addr})
+		rows := make([]table.Row, 0, len(devices))
+		for _, d := range devices {
+			addr := "(resolving...)"
+			if d.IP != "" {
+				addr = fmt.Sprintf("%s:%d", d.IP, d.Port)
 			}
-			m.table.SetRows(rows)
-
-			m.events = m.appState.Events()
-
-			return m, waitForChange(m.changed)
+			rows = append(rows, table.Row{d.Instance, d.ServiceType, addr})
 		}
-		return m, nil
+		m.table.SetRows(rows)
+
+		m.events = m.appState.Events()
+
+		return m, waitForChange(m.changed)
 	}
+	return m, nil
+}
 
 func (m model) View() string {
 	header := lipgloss.NewStyle().Bold(true).Foreground(colorText).Render("pulse") +
 		"  " +
-		lipgloss.NewStyle().Foreground(colorMuted).Render("live device discovery — q to quit")
+		lipgloss.NewStyle().Foreground(colorMuted).Render("live device discovery — q to quit, tab to toggle map")
+
+	if m.showMap {
+		return header + "\n\n" + renderMap(m.devices)
+	}
 
 	tableBox := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
@@ -196,4 +204,27 @@ func ttlRemaining(ttl time.Duration, seenAt time.Time, now time.Time) string {
 		remaining = 0
 	}
 	return fmt.Sprintf("%ds left (of %ds)", int(remaining.Seconds()), int(ttl.Seconds()))
+}
+
+func renderMap(devices []DeviceRecord) string {
+	groups := groupDevices(devices)
+	if len(groups) == 0 {
+		return "no devices yet"
+	}
+
+	out := fmt.Sprintf("NETWORK MAP — %d physical device(s) inferred from %d service announcement(s)\n\n", len(groups), len(devices))
+
+	for _, g := range groups {
+		out += lipgloss.NewStyle().Bold(true).Render(g.Name) + "\n"
+		for _, svc := range g.Services {
+			addr := "(resolving...)"
+			if svc.IP != "" {
+				addr = fmt.Sprintf("%s:%d", svc.IP, svc.Port)
+			}
+			out += fmt.Sprintf("  • %-25s %s\n", svc.ServiceType, addr)
+		}
+		out += "\n"
+	}
+
+	return out
 }
