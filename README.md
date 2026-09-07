@@ -117,10 +117,10 @@ optional grouped network map.
 
 ## Tech stack
 
-- **Go**, language
-- **mDNS over UDP multicast**, discovery protocol, hand-decoded DNS wire format, no external DNS library
-- **`charmbracelet/bubbletea`, `bubbles`, `lipgloss`**, terminal UI
-- **JSON**, export format
+- **Go** - language
+- **mDNS over UDP multicast** - discovery protocol, hand-decoded DNS wire format, no external DNS library
+- **`charmbracelet/bubbletea`** - `bubbles`, `lipgloss`**, terminal UI
+- **JSON** - export format
 
 ## Installation
 
